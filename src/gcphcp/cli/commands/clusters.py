@@ -36,7 +36,7 @@ def resolve_cluster_identifier(api_client, identifier: str) -> str:
     # Search through all clusters
     try:
         response = api_client.get("/api/v1/clusters", params={"limit": 100})
-        clusters = response.get("clusters", [])
+        clusters = response.get("clusters") or []
 
         # Try exact name match first
         for cluster in clusters:
@@ -120,7 +120,7 @@ def list_clusters(
         api_client = cli_context.get_api_client()
         response = api_client.get("/api/v1/clusters", params=params)
 
-        clusters = response.get("clusters", [])
+        clusters = response.get("clusters") or []
         total = response.get("total", len(clusters))
 
         if not clusters:
