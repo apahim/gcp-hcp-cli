@@ -104,7 +104,10 @@ class TestAPIClient:
         """Test handling 400 validation error."""
         mock_response = Mock()
         mock_response.status_code = 400
-        mock_response.headers = {"Content-Type": "application/json", "X-Request-ID": "req-123"}
+        mock_response.headers = {
+            "Content-Type": "application/json",
+            "X-Request-ID": "req-123",
+        }
         mock_response.json.return_value = {"message": "Validation failed"}
 
         with pytest.raises(ValidationError) as exc_info:
@@ -198,6 +201,7 @@ class TestAPIClient:
     def test_handle_response_invalid_json(self, api_client):
         """Test handling response with invalid JSON."""
         import json
+
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.headers = {"Content-Type": "application/json"}

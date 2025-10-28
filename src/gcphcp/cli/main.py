@@ -171,13 +171,15 @@ def create_cli_context(
     help="Output format",
 )
 @click.option(
-    "-v", "--verbose",
+    "-v",
+    "--verbose",
     "verbosity",
     count=True,
     help="Increase verbosity (use -v, -vv, or -vvv)",
 )
 @click.option(
-    "-q", "--quiet",
+    "-q",
+    "--quiet",
     is_flag=True,
     help="Suppress non-essential output",
 )

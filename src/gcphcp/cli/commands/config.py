@@ -19,7 +19,9 @@ def list_config(cli_context) -> None:
         config_data = cli_context.config.get_all()
 
         if cli_context.output_format == "table":
-            table = Table(title="Configuration", show_header=True, header_style="bold blue")
+            table = Table(
+                title="Configuration", show_header=True, header_style="bold blue"
+            )
             table.add_column("Setting", style="cyan")
             table.add_column("Value", style="white")
             table.add_column("Source", style="dim")
@@ -55,7 +57,9 @@ def get_config(cli_context, key: str) -> None:
 
         if value is None:
             if not cli_context.quiet:
-                cli_context.console.print(f"[yellow]Configuration key '{key}' is not set.[/yellow]")
+                cli_context.console.print(
+                    f"[yellow]Configuration key '{key}' is not set.[/yellow]"
+                )
             return
 
         if cli_context.output_format == "value":
@@ -109,7 +113,9 @@ def unset_config(cli_context, key: str) -> None:
     try:
         if cli_context.config.get(key) is None:
             if not cli_context.quiet:
-                cli_context.console.print(f"[yellow]Configuration key '{key}' is not set.[/yellow]")
+                cli_context.console.print(
+                    f"[yellow]Configuration key '{key}' is not set.[/yellow]"
+                )
             return
 
         cli_context.config.unset(key)

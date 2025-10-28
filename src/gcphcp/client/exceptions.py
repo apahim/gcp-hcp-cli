@@ -62,31 +62,37 @@ class APIConnectionError(APIError):
 
 class APITimeoutError(APIConnectionError):
     """Exception raised when API request times out."""
+
     pass
 
 
 class AuthenticationRequiredError(APIError):
     """Exception raised when authentication is required but not provided."""
+
     pass
 
 
 class AuthorizationError(APIError):
     """Exception raised when user is not authorized to perform the action."""
+
     pass
 
 
 class ResourceNotFoundError(APIError):
     """Exception raised when a requested resource is not found."""
+
     pass
 
 
 class ValidationError(APIError):
     """Exception raised when request validation fails."""
+
     pass
 
 
 class ServerError(APIError):
     """Exception raised when server returns a 5xx error."""
+
     pass
 
 
@@ -94,10 +100,7 @@ class RateLimitError(APIError):
     """Exception raised when rate limit is exceeded."""
 
     def __init__(
-        self,
-        message: str,
-        retry_after: Optional[int] = None,
-        **kwargs
+        self, message: str, retry_after: Optional[int] = None, **kwargs
     ) -> None:
         """Initialize the rate limit error.
 

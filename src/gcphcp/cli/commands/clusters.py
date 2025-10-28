@@ -21,7 +21,7 @@ def resolve_cluster_identifier(api_client, identifier: str) -> str:
         click.ClickException: If no cluster found or multiple matches
     """
     # If it looks like a full UUID, try it directly first
-    if len(identifier) == 36 and identifier.count('-') == 4:
+    if len(identifier) == 36 and identifier.count("-") == 4:
         try:
             # Test if it exists by fetching it
             api_client.get(f"/api/v1/clusters/{identifier}")
@@ -89,7 +89,9 @@ def clusters_group() -> None:
 )
 @click.option(
     "--status",
-    type=click.Choice(["Pending", "Progressing", "Ready", "Failed"], case_sensitive=False),
+    type=click.Choice(
+        ["Pending", "Progressing", "Ready", "Failed"], case_sensitive=False
+    ),
     help="Filter clusters by status",
 )
 @click.pass_obj
@@ -128,18 +130,22 @@ def list_clusters(cli_context, limit: int, offset: int, status: str) -> None:
             # Prepare table data with full IDs
             table_data = []
             for cluster in clusters:
-                table_data.append({
-                    "NAME": cluster.get("name", ""),
-                    "ID": cluster.get("id", ""),  # Show full ID
-                    "STATUS": cluster.get("status", {}).get("phase", "Unknown"),
-                    "PROJECT": cluster.get("target_project_id", ""),
-                    "CREATED": cli_context.formatter.format_datetime(cluster.get("created_at")),
-                })
+                table_data.append(
+                    {
+                        "NAME": cluster.get("name", ""),
+                        "ID": cluster.get("id", ""),  # Show full ID
+                        "STATUS": cluster.get("status", {}).get("phase", "Unknown"),
+                        "PROJECT": cluster.get("target_project_id", ""),
+                        "CREATED": cli_context.formatter.format_datetime(
+                            cluster.get("created_at")
+                        ),
+                    }
+                )
 
             cli_context.formatter.print_table(
                 data=table_data,
                 title=f"Clusters ({len(clusters)}/{total})",
-                columns=["NAME", "ID", "STATUS", "PROJECT", "CREATED"]
+                columns=["NAME", "ID", "STATUS", "PROJECT", "CREATED"],
             )
         else:
             # Use raw format for non-table outputs
@@ -160,7 +166,6 @@ def list_clusters(cli_context, limit: int, offset: int, status: str) -> None:
     except Exception as e:
         cli_context.console.print(f"[red]Unexpected error: {e}[/red]")
         raise click.ClickException(str(e))
-
 
 
 @clusters_group.command("status")
@@ -184,7 +189,9 @@ def list_clusters(cli_context, limit: int, offset: int, status: str) -> None:
     help="Show additional detailed controller status and resource information",
 )
 @click.pass_obj
-def cluster_status(cli_context, cluster_identifier: str, watch: bool, interval: int, all: bool) -> None:
+def cluster_status(
+    cli_context, cluster_identifier: str, watch: bool, interval: int, all: bool
+) -> None:
     """Show detailed information and status for a cluster.
 
     Displays comprehensive cluster details including current status, conditions,
@@ -219,31 +226,43 @@ def cluster_status(cli_context, cluster_identifier: str, watch: bool, interval: 
             controller_status_data = None
             if all:
                 try:
-                    controller_status_data = api_client.get(f"/api/v1/clusters/{cluster_id}/status")
+                    controller_status_data = api_client.get(
+                        f"/api/v1/clusters/{cluster_id}/status"
+                    )
                 except APIError as e:
                     # If status endpoint is not available, show warning but continue
                     if not cli_context.quiet:
-                        cli_context.console.print(f"[yellow]Warning: Could not fetch detailed controller status: {e}[/yellow]")
+                        cli_context.console.print(
+                            f"[yellow]Warning: Could not fetch detailed controller status: {e}[/yellow]"
+                        )
 
             if cli_context.output_format == "table":
                 cli_context.formatter.print_cluster_status(cluster, cluster_id)
 
                 # Display additional controller status in table format
                 if all and controller_status_data:
-                    cli_context.formatter.print_controller_status(controller_status_data, cluster_id)
+                    cli_context.formatter.print_controller_status(
+                        controller_status_data, cluster_id
+                    )
             else:
                 # For JSON/YAML, show comprehensive data
                 status_data = {
                     "cluster_id": cluster_id,
                     "cluster_name": cluster.get("name", "Unknown"),
                     "status": cluster.get("status", {}),
-                    "last_checked": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+                    "last_checked": time.strftime(
+                        "%Y-%m-%d %H:%M:%S UTC", time.gmtime()
+                    ),
                 }
 
                 # Include controller status data if --all is used
                 if all and controller_status_data:
-                    status_data["controller_status"] = controller_status_data.get("controller_status", [])
-                    status_data["detailed_status"] = controller_status_data.get("status", {})
+                    status_data["controller_status"] = controller_status_data.get(
+                        "controller_status", []
+                    )
+                    status_data["detailed_status"] = controller_status_data.get(
+                        "status", {}
+                    )
 
                 cli_context.formatter.print_data(status_data)
 
@@ -255,18 +274,24 @@ def cluster_status(cli_context, cluster_identifier: str, watch: bool, interval: 
             raise click.ClickException(str(e))
 
     if watch:
-        cli_context.console.print(f"[cyan]Watching cluster status (press Ctrl+C to stop)...[/cyan]\n")
+        cli_context.console.print(
+            "[cyan]Watching cluster status (press Ctrl+C to stop)...[/cyan]\n"
+        )
         try:
             while True:
                 if cli_context.output_format == "table":
                     # Clear screen for table format
                     cli_context.console.clear()
-                    cli_context.console.print(f"[cyan]Last updated: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}[/cyan]")
+                    cli_context.console.print(
+                        f"[cyan]Last updated: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}[/cyan]"
+                    )
 
                 print_status()
 
                 if cli_context.output_format != "table":
-                    cli_context.console.print(f"\n[dim]Next update in {interval} seconds...[/dim]")
+                    cli_context.console.print(
+                        f"\n[dim]Next update in {interval} seconds...[/dim]"
+                    )
 
                 time.sleep(interval)
         except KeyboardInterrupt:
@@ -291,7 +316,9 @@ def cluster_status(cli_context, cluster_identifier: str, watch: bool, interval: 
     help="Show what would be created without actually creating",
 )
 @click.pass_obj
-def create_cluster(cli_context, cluster_name: str, project: str, description: str, dry_run: bool) -> None:
+def create_cluster(
+    cli_context, cluster_name: str, project: str, description: str, dry_run: bool
+) -> None:
     """Create a new cluster.
 
     CLUSTER_NAME: Name for the new cluster (must be DNS-compatible).
@@ -321,7 +348,9 @@ def create_cluster(cli_context, cluster_name: str, project: str, description: st
 
         # Confirm creation
         if not cli_context.quiet:
-            cli_context.console.print(f"Creating cluster '{cluster_name}' in project '{target_project}'...")
+            cli_context.console.print(
+                f"Creating cluster '{cluster_name}' in project '{target_project}'..."
+            )
 
         # Make API request
         api_client = cli_context.get_api_client()
@@ -329,10 +358,15 @@ def create_cluster(cli_context, cluster_name: str, project: str, description: st
 
         if not cli_context.quiet:
             success_text = Text()
-            success_text.append("✓ Cluster created successfully!\n\n", style="green bold")
+            success_text.append(
+                "✓ Cluster created successfully!\n\n", style="green bold"
+            )
             success_text.append(f"Name: {cluster.get('name')}\n", style="bright_blue")
             success_text.append(f"ID: {cluster.get('id')}\n", style="dim")
-            success_text.append(f"Status: {cluster.get('status', {}).get('phase', 'Unknown')}", style="dim")
+            success_text.append(
+                f"Status: {cluster.get('status', {}).get('phase', 'Unknown')}",
+                style="dim",
+            )
 
             panel = Panel(
                 success_text,
@@ -364,7 +398,9 @@ def create_cluster(cli_context, cluster_name: str, project: str, description: st
     help="Skip confirmation prompt",
 )
 @click.pass_obj
-def delete_cluster(cli_context, cluster_identifier: str, force: bool, yes: bool) -> None:
+def delete_cluster(
+    cli_context, cluster_identifier: str, force: bool, yes: bool
+) -> None:
     """Delete a cluster.
 
     CLUSTER_IDENTIFIER: Cluster name, partial ID (8+ chars), or full UUID.
@@ -406,7 +442,9 @@ def delete_cluster(cli_context, cluster_identifier: str, force: bool, yes: bool)
         api_client.delete(f"/api/v1/clusters/{cluster_id}", params=params)
 
         if not cli_context.quiet:
-            cli_context.console.print(f"[green]✓[/green] Cluster '{cluster_name}' deleted successfully.")
+            cli_context.console.print(
+                f"[green]✓[/green] Cluster '{cluster_name}' deleted successfully."
+            )
 
     except click.ClickException:
         # Re-raise click exceptions (from resolve_cluster_identifier)
@@ -417,4 +455,3 @@ def delete_cluster(cli_context, cluster_identifier: str, force: bool, yes: bool)
     except Exception as e:
         cli_context.console.print(f"[red]Unexpected error: {e}[/red]")
         raise click.ClickException(str(e))
-

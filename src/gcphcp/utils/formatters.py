@@ -3,7 +3,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import yaml
 from rich.console import Console
@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 class OutputFormatter:
     """Output formatter supporting multiple formats like gcloud CLI."""
 
-    def __init__(self, format_type: str = "table", console: Optional[Console] = None) -> None:
+    def __init__(
+        self, format_type: str = "table", console: Optional[Console] = None
+    ) -> None:
         """Initialize output formatter.
 
         Args:
@@ -108,7 +110,14 @@ class OutputFormatter:
         table.add_column("Value", style="white")
 
         # Add basic fields
-        basic_fields = ["id", "name", "target_project_id", "created_by", "created_at", "updated_at"]
+        basic_fields = [
+            "id",
+            "name",
+            "target_project_id",
+            "created_by",
+            "created_at",
+            "updated_at",
+        ]
         for field in basic_fields:
             if field in resource:
                 value = resource[field]
@@ -146,7 +155,9 @@ class OutputFormatter:
 
         self.console.print(table)
 
-    def print_cluster_status(self, cluster_data: Dict[str, Any], cluster_id: str) -> None:
+    def print_cluster_status(
+        self, cluster_data: Dict[str, Any], cluster_id: str
+    ) -> None:
         """Print formatted cluster status information.
 
         Args:
@@ -158,7 +169,7 @@ class OutputFormatter:
             status_section = {
                 "cluster_id": cluster_id,
                 "cluster_name": cluster_data.get("name", "Unknown"),
-                "status": cluster_data.get("status", {})
+                "status": cluster_data.get("status", {}),
             }
             self.print_data(status_section)
             return
@@ -167,7 +178,7 @@ class OutputFormatter:
         table = Table(
             title=f"Status: {cluster_data.get('name', cluster_id)}",
             show_header=False,
-            box=None
+            box=None,
         )
         table.add_column("Field", style="cyan", width=20)
         table.add_column("Value", style="white")
@@ -189,7 +200,7 @@ class OutputFormatter:
                 "Ready": "green",
                 "Progressing": "yellow",
                 "Pending": "blue",
-                "Failed": "red"
+                "Failed": "red",
             }.get(phase, "white")
             table.add_row("  Phase", f"[{phase_color}]{phase}[/{phase_color}]")
 
@@ -200,7 +211,9 @@ class OutputFormatter:
                 if gen_current == gen_desired:
                     gen_status = f"[green]{gen_current}[/green] (up to date)"
                 else:
-                    gen_status = f"[yellow]{gen_current}[/yellow] (desired: {gen_desired})"
+                    gen_status = (
+                        f"[yellow]{gen_current}[/yellow] (desired: {gen_desired})"
+                    )
                 table.add_row("  Generation", gen_status)
 
             # Status message
@@ -230,7 +243,7 @@ class OutputFormatter:
                     status_color = {
                         "True": "green",
                         "False": "red",
-                        "Unknown": "yellow"
+                        "Unknown": "yellow",
                     }.get(condition_status, "white")
 
                     status_text = f"[{status_color}]{condition_status}[/{status_color}]"
@@ -241,8 +254,12 @@ class OutputFormatter:
 
                     # Add transition time if available
                     if condition.get("lastTransitionTime"):
-                        transition_time = self.format_datetime(condition["lastTransitionTime"])
-                        table.add_row(f"    Last Transition", f"[dim]{transition_time}[/dim]")
+                        transition_time = self.format_datetime(
+                            condition["lastTransitionTime"]
+                        )
+                        table.add_row(
+                            "    Last Transition", f"[dim]{transition_time}[/dim]"
+                        )
 
         # Platform information
         spec = cluster_data.get("spec", {})
@@ -259,7 +276,9 @@ class OutputFormatter:
 
         self.console.print(table)
 
-    def print_controller_status(self, controller_data: Dict[str, Any], cluster_id: str) -> None:
+    def print_controller_status(
+        self, controller_data: Dict[str, Any], cluster_id: str
+    ) -> None:
         """Print detailed controller status information.
 
         Args:
@@ -278,7 +297,7 @@ class OutputFormatter:
         table = Table(
             title="[bold cyan]Controller Status Details[/bold cyan]",
             show_header=False,
-            box=None
+            box=None,
         )
         table.add_column("Field", style="cyan", width=25)
         table.add_column("Value", style="white")
@@ -288,11 +307,15 @@ class OutputFormatter:
                 table.add_row("", "")  # Separator between controllers
 
             controller_name = controller.get("controller_name", "Unknown")
-            table.add_row(f"[bold]Controller {i+1}[/bold]", f"[bold]{controller_name}[/bold]")
+            table.add_row(
+                f"[bold]Controller {i+1}[/bold]", f"[bold]{controller_name}[/bold]"
+            )
 
             # Controller-level info
             if controller.get("observed_generation"):
-                table.add_row("  Observed Generation", str(controller["observed_generation"]))
+                table.add_row(
+                    "  Observed Generation", str(controller["observed_generation"])
+                )
 
             if controller.get("last_updated"):
                 last_updated = self.format_datetime(controller["last_updated"])
@@ -311,7 +334,7 @@ class OutputFormatter:
                     status_color = {
                         "True": "green",
                         "False": "red",
-                        "Unknown": "yellow"
+                        "Unknown": "yellow",
                     }.get(condition_status, "white")
 
                     status_text = f"[{status_color}]{condition_status}[/{status_color}]"
@@ -335,10 +358,13 @@ class OutputFormatter:
                         "Ready": "green",
                         "Available": "green",
                         "Failed": "red",
-                        "Pending": "yellow"
+                        "Pending": "yellow",
                     }.get(resource_status, "white")
 
-                    table.add_row(f"    {resource_type.title()}", f"[{status_color}]{resource_status}[/{status_color}]")
+                    table.add_row(
+                        f"    {resource_type.title()}",
+                        f"[{status_color}]{resource_status}[/{status_color}]",
+                    )
 
                     # Show hosted cluster conditions if available
                     if resource_type == "hostedcluster":
@@ -346,7 +372,12 @@ class OutputFormatter:
                         hc_conditions = hc_status.get("conditions", [])
 
                         # Show a few key conditions
-                        key_conditions = ["Available", "Progressing", "Degraded", "ClusterVersionSucceeding"]
+                        key_conditions = [
+                            "Available",
+                            "Progressing",
+                            "Degraded",
+                            "ClusterVersionSucceeding",
+                        ]
                         for condition in hc_conditions:
                             condition_type = condition.get("type", "")
                             if condition_type in key_conditions:
@@ -354,9 +385,18 @@ class OutputFormatter:
                                 condition_reason = condition.get("reason", "")
 
                                 status_color = {
-                                    "True": "green" if condition_type != "Degraded" else "red",
-                                    "False": "red" if condition_type in ["Available", "ClusterVersionSucceeding"] else "green",
-                                    "Unknown": "yellow"
+                                    "True": (
+                                        "green"
+                                        if condition_type != "Degraded"
+                                        else "red"
+                                    ),
+                                    "False": (
+                                        "red"
+                                        if condition_type
+                                        in ["Available", "ClusterVersionSucceeding"]
+                                        else "green"
+                                    ),
+                                    "Unknown": "yellow",
                                 }.get(condition_status, "white")
 
                                 display_text = f"[{status_color}]{condition_status}[/{status_color}]"
@@ -368,7 +408,9 @@ class OutputFormatter:
         self.console.print("\n")  # Add some spacing
         self.console.print(table)
 
-    def print_original_cluster_status(self, status_data: Dict[str, Any], cluster_id: str) -> None:
+    def print_original_cluster_status(
+        self, status_data: Dict[str, Any], cluster_id: str
+    ) -> None:
         """Print cluster status information.
 
         Args:
@@ -395,7 +437,9 @@ class OutputFormatter:
             status_text.append(f"Message: {status_data['message']}\n", style="dim")
 
         if "generation" in status_data:
-            status_text.append(f"Generation: {status_data['generation']}\n", style="dim")
+            status_text.append(
+                f"Generation: {status_data['generation']}\n", style="dim"
+            )
 
         panel = Panel(
             status_text,
@@ -407,7 +451,9 @@ class OutputFormatter:
         # Conditions table
         conditions = status_data.get("conditions", [])
         if conditions:
-            table = Table(title="Conditions", show_header=True, header_style="bold blue")
+            table = Table(
+                title="Conditions", show_header=True, header_style="bold blue"
+            )
             table.add_column("Type", style="cyan")
             table.add_column("Status", style="white")
             table.add_column("Last Transition", style="dim")
@@ -432,7 +478,9 @@ class OutputFormatter:
         # Controller statuses
         controller_statuses = status_data.get("controllerStatuses", [])
         if controller_statuses:
-            table = Table(title="Controller Statuses", show_header=True, header_style="bold blue")
+            table = Table(
+                title="Controller Statuses", show_header=True, header_style="bold blue"
+            )
             table.add_column("Controller", style="cyan")
             table.add_column("Status", style="white")
             table.add_column("Last Updated", style="dim")

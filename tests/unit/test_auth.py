@@ -3,14 +3,13 @@
 import json
 import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch, mock_open, MagicMock
+from unittest.mock import Mock, patch
 
 from gcphcp.auth.google_auth import GoogleCloudAuth, REQUIRED_SCOPES
 from gcphcp.auth.exceptions import (
     AuthenticationError,
     TokenRefreshError,
     CredentialsNotFoundError,
-    InvalidCredentialsError,
 )
 
 
@@ -72,7 +71,9 @@ class TestGoogleCloudAuth:
         assert auth.credentials_path == temp_credentials_path
         assert auth.client_secrets_path == temp_secrets_path
 
-    def test_load_stored_credentials_success(self, auth_manager, valid_credentials_data):
+    def test_load_stored_credentials_success(
+        self, auth_manager, valid_credentials_data
+    ):
         """Test successful loading of stored credentials."""
         # Write credentials to file
         auth_manager.credentials_path.parent.mkdir(parents=True, exist_ok=True)
@@ -108,7 +109,9 @@ class TestGoogleCloudAuth:
         assert result is False
 
     @patch("gcphcp.auth.google_auth.default")
-    def test_perform_oauth_flow_with_default_credentials(self, mock_default, auth_manager):
+    def test_perform_oauth_flow_with_default_credentials(
+        self, mock_default, auth_manager
+    ):
         """Test OAuth flow using application default credentials."""
         mock_credentials = Mock()
         mock_default.return_value = (mock_credentials, "test-project")
@@ -140,7 +143,9 @@ class TestGoogleCloudAuth:
         mock_flow.run_local_server.assert_called_once()
 
     @patch("gcphcp.auth.google_auth.default")
-    def test_perform_oauth_flow_no_credentials_available(self, mock_default, auth_manager):
+    def test_perform_oauth_flow_no_credentials_available(
+        self, mock_default, auth_manager
+    ):
         """Test OAuth flow when no credentials are available."""
         from google.auth.exceptions import DefaultCredentialsError
 
@@ -189,9 +194,9 @@ class TestGoogleCloudAuth:
 
         # Create a mock ID token
         payload = {"email": "token@example.com"}
-        encoded_payload = base64.urlsafe_b64encode(
-            json.dumps(payload).encode()
-        ).decode().rstrip("=")
+        encoded_payload = (
+            base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+        )
         id_token = f"header.{encoded_payload}.signature"
 
         mock_credentials = Mock()
@@ -204,7 +209,7 @@ class TestGoogleCloudAuth:
 
     def test_save_credentials(self, auth_manager, valid_credentials_data):
         """Test saving credentials to file."""
-        # Create mock credentials
+        # Create mock credentials with proper attributes
         mock_credentials = Mock()
         mock_credentials.token = valid_credentials_data["token"]
         mock_credentials.refresh_token = valid_credentials_data["refresh_token"]
@@ -212,12 +217,19 @@ class TestGoogleCloudAuth:
         mock_credentials.client_secret = valid_credentials_data["client_secret"]
         mock_credentials.token_uri = valid_credentials_data["token_uri"]
         mock_credentials.scopes = valid_credentials_data["scopes"]
+        # Add missing attributes that might be accessed by getattr()
+        mock_credentials.id_token = valid_credentials_data.get("id_token", None)
 
         auth_manager._credentials = mock_credentials
         auth_manager._user_email = valid_credentials_data["user_email"]
 
-        # Save credentials
-        auth_manager._save_credentials()
+        # Mock _extract_user_email to return a valid email
+        with patch.object(
+            auth_manager, "_extract_user_email",
+            return_value=valid_credentials_data["user_email"]
+        ):
+            # Save credentials
+            auth_manager._save_credentials()
 
         # Verify file was created and contains correct data
         assert auth_manager.credentials_path.exists()
@@ -299,13 +311,25 @@ class TestGoogleCloudAuth:
         mock_credentials = Mock()
         mock_credentials.expired = False
         mock_credentials.token = "test_token"
+        mock_credentials.id_token = "test_token"
         mock_default.return_value = (mock_credentials, "test-project")
 
-        with patch.object(auth_manager, "_extract_user_email", return_value="test@example.com"):
-            token, email = auth_manager.authenticate()
+        with patch.object(
+            auth_manager, "_get_identity_token_without_audience",
+            side_effect=AuthenticationError("No gcloud token")
+        ):
+            with patch.object(auth_manager, "_perform_oauth_flow") as mock_oauth:
+                with patch.object(
+                    auth_manager, "_extract_user_email", return_value="test@example.com"
+                ):
+                    mock_oauth.return_value = None
+                    auth_manager._credentials = mock_credentials
+
+                    token, email = auth_manager.authenticate()
 
         assert token == "test_token"
         assert email == "test@example.com"
+        mock_oauth.assert_called_once()
 
     def test_authenticate_force_reauth(self, auth_manager, valid_credentials_data):
         """Test authentication with force reauth."""
@@ -314,14 +338,22 @@ class TestGoogleCloudAuth:
         with open(auth_manager.credentials_path, "w") as f:
             json.dump(valid_credentials_data, f)
 
-        with patch.object(auth_manager, "_perform_oauth_flow") as mock_oauth:
-            with patch.object(auth_manager, "_extract_user_email", return_value="test@example.com"):
-                mock_credentials = Mock()
-                mock_credentials.expired = False
-                mock_credentials.token = "new_token"
-                auth_manager._credentials = mock_credentials
+        with patch.object(
+            auth_manager, "_get_identity_token_without_audience",
+            side_effect=AuthenticationError("No gcloud token")
+        ):
+            with patch.object(auth_manager, "_perform_oauth_flow") as mock_oauth:
+                with patch.object(
+                    auth_manager, "_extract_user_email", return_value="test@example.com"
+                ):
+                    mock_credentials = Mock()
+                    mock_credentials.expired = False
+                    mock_credentials.token = "new_token"
+                    mock_credentials.id_token = "new_token"
+                    mock_oauth.return_value = None
+                    auth_manager._credentials = mock_credentials
 
-                token, email = auth_manager.authenticate(force_reauth=True)
+                    token, email = auth_manager.authenticate(force_reauth=True)
 
         mock_oauth.assert_called_once()
         assert token == "new_token"

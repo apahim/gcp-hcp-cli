@@ -24,14 +24,17 @@ class AuthenticationError(Exception):
 
 class TokenRefreshError(AuthenticationError):
     """Exception raised when token refresh fails."""
+
     pass
 
 
 class CredentialsNotFoundError(AuthenticationError):
     """Exception raised when user credentials are not found."""
+
     pass
 
 
 class InvalidCredentialsError(AuthenticationError):
     """Exception raised when credentials are invalid or expired."""
+
     pass

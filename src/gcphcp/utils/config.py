@@ -168,4 +168,5 @@ class Config:
         """
         # Import here to avoid circular imports
         from .. import __version__
+
         return __version__

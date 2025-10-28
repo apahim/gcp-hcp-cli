@@ -11,7 +11,9 @@ class NodePoolCondition(BaseModel):
 
     type: str = Field(description="Type of condition")
     status: str = Field(description="Status of condition (True/False/Unknown)")
-    lastTransitionTime: Optional[datetime] = Field(default=None, description="Last transition time")
+    lastTransitionTime: Optional[datetime] = Field(
+        default=None, description="Last transition time"
+    )
     reason: Optional[str] = Field(default=None, description="Reason for condition")
     message: Optional[str] = Field(default=None, description="Human-readable message")
 
@@ -19,15 +21,21 @@ class NodePoolCondition(BaseModel):
 class NodePoolStatus(BaseModel):
     """Represents nodepool status information."""
 
-    phase: Optional[str] = Field(default=None, description="Current phase of the nodepool")
+    phase: Optional[str] = Field(
+        default=None, description="Current phase of the nodepool"
+    )
     message: Optional[str] = Field(default=None, description="Status message")
     generation: Optional[int] = Field(default=None, description="Generation number")
     resourceVersion: Optional[str] = Field(default=None, description="Resource version")
     conditions: List[NodePoolCondition] = Field(
         default_factory=list, description="NodePool conditions"
     )
-    nodeCount: Optional[int] = Field(default=None, description="Current number of nodes")
-    readyNodeCount: Optional[int] = Field(default=None, description="Number of ready nodes")
+    nodeCount: Optional[int] = Field(
+        default=None, description="Current number of nodes"
+    )
+    readyNodeCount: Optional[int] = Field(
+        default=None, description="Number of ready nodes"
+    )
 
 
 class NodePoolManagement(BaseModel):
@@ -35,7 +43,9 @@ class NodePoolManagement(BaseModel):
 
     autoRepair: Optional[bool] = Field(default=None, description="Enable auto-repair")
     autoUpgrade: Optional[bool] = Field(default=None, description="Enable auto-upgrade")
-    upgradeType: Optional[str] = Field(default=None, description="Upgrade strategy type")
+    upgradeType: Optional[str] = Field(
+        default=None, description="Upgrade strategy type"
+    )
 
 
 class NodePoolSpec(BaseModel):
@@ -44,14 +54,22 @@ class NodePoolSpec(BaseModel):
     clusterId: str = Field(description="Parent cluster ID")
     machineType: Optional[str] = Field(default=None, description="GCP machine type")
     diskSize: Optional[int] = Field(default=None, description="Boot disk size in GB")
-    nodeCount: Optional[int] = Field(default=None, description="Desired number of nodes")
-    minNodeCount: Optional[int] = Field(default=None, description="Minimum number of nodes")
-    maxNodeCount: Optional[int] = Field(default=None, description="Maximum number of nodes")
+    nodeCount: Optional[int] = Field(
+        default=None, description="Desired number of nodes"
+    )
+    minNodeCount: Optional[int] = Field(
+        default=None, description="Minimum number of nodes"
+    )
+    maxNodeCount: Optional[int] = Field(
+        default=None, description="Maximum number of nodes"
+    )
     management: Optional[NodePoolManagement] = Field(
         default=None, description="Management configuration"
     )
     labels: Optional[Dict[str, str]] = Field(default=None, description="Node labels")
-    taints: Optional[List[Dict[str, Any]]] = Field(default=None, description="Node taints")
+    taints: Optional[List[Dict[str, Any]]] = Field(
+        default=None, description="Node taints"
+    )
 
 
 class NodePool(BaseModel):
@@ -60,13 +78,23 @@ class NodePool(BaseModel):
     id: str = Field(description="Unique nodepool identifier")
     name: str = Field(description="NodePool name")
     clusterId: str = Field(description="Parent cluster ID")
-    createdBy: Optional[str] = Field(default=None, description="User who created the nodepool")
+    createdBy: Optional[str] = Field(
+        default=None, description="User who created the nodepool"
+    )
     generation: Optional[int] = Field(default=None, description="Generation number")
     resourceVersion: Optional[str] = Field(default=None, description="Resource version")
-    spec: Optional[NodePoolSpec] = Field(default=None, description="NodePool specification")
-    status: Optional[NodePoolStatus] = Field(default=None, description="NodePool status")
-    createdAt: Optional[datetime] = Field(default=None, description="Creation timestamp")
-    updatedAt: Optional[datetime] = Field(default=None, description="Last update timestamp")
+    spec: Optional[NodePoolSpec] = Field(
+        default=None, description="NodePool specification"
+    )
+    status: Optional[NodePoolStatus] = Field(
+        default=None, description="NodePool status"
+    )
+    createdAt: Optional[datetime] = Field(
+        default=None, description="Creation timestamp"
+    )
+    updatedAt: Optional[datetime] = Field(
+        default=None, description="Last update timestamp"
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -145,9 +173,13 @@ class NodePool(BaseModel):
         """
         # Handle datetime fields
         if "createdAt" in data and data["createdAt"]:
-            data["createdAt"] = datetime.fromisoformat(data["createdAt"].replace("Z", "+00:00"))
+            data["createdAt"] = datetime.fromisoformat(
+                data["createdAt"].replace("Z", "+00:00")
+            )
         if "updatedAt" in data and data["updatedAt"]:
-            data["updatedAt"] = datetime.fromisoformat(data["updatedAt"].replace("Z", "+00:00"))
+            data["updatedAt"] = datetime.fromisoformat(
+                data["updatedAt"].replace("Z", "+00:00")
+            )
 
         # Handle nested status
         if "status" in data and data["status"]:

@@ -45,7 +45,9 @@ def login(cli_context, force: bool) -> None:
             success_text = Text()
             success_text.append("✓ Authentication successful!\n\n", style="green bold")
             success_text.append(f"User: {user_email}\n", style="bright_blue")
-            success_text.append("Credentials have been saved for future use.", style="dim")
+            success_text.append(
+                "Credentials have been saved for future use.", style="dim"
+            )
 
             panel = Panel(
                 success_text,
@@ -58,7 +60,9 @@ def login(cli_context, force: bool) -> None:
         cli_context.console.print(f"[red]Authentication failed: {e}[/red]")
         raise click.ClickException(str(e))
     except Exception as e:
-        cli_context.console.print(f"[red]Unexpected error during authentication: {e}[/red]")
+        cli_context.console.print(
+            f"[red]Unexpected error during authentication: {e}[/red]"
+        )
         raise click.ClickException(str(e))
 
 
@@ -78,7 +82,9 @@ def logout(cli_context, logout_all: bool) -> None:
     try:
         if not cli_context.auth.is_authenticated():
             if not cli_context.quiet:
-                cli_context.console.print("[yellow]No active authentication found.[/yellow]")
+                cli_context.console.print(
+                    "[yellow]No active authentication found.[/yellow]"
+                )
             return
 
         # Confirm logout
@@ -93,7 +99,9 @@ def logout(cli_context, logout_all: bool) -> None:
         if not cli_context.quiet:
             cli_context.console.print("[green]✓[/green] Successfully logged out.")
             if logout_all:
-                cli_context.console.print("[dim]All stored credentials have been removed.[/dim]")
+                cli_context.console.print(
+                    "[dim]All stored credentials have been removed.[/dim]"
+                )
 
     except Exception as e:
         cli_context.console.print(f"[red]Error during logout: {e}[/red]")
@@ -126,7 +134,9 @@ def status(cli_context) -> None:
             except Exception as e:
                 # Show authenticated but with warning
                 status_text = Text()
-                status_text.append("⚠ Authenticated (with issues)\n\n", style="yellow bold")
+                status_text.append(
+                    "⚠ Authenticated (with issues)\n\n", style="yellow bold"
+                )
                 status_text.append(f"Warning: {e}\n", style="yellow")
                 status_text.append("You may need to re-authenticate.", style="dim")
 
@@ -151,7 +161,9 @@ def status(cli_context) -> None:
             cli_context.console.print(panel)
 
     except Exception as e:
-        cli_context.console.print(f"[red]Error checking authentication status: {e}[/red]")
+        cli_context.console.print(
+            f"[red]Error checking authentication status: {e}[/red]"
+        )
         raise click.ClickException(str(e))
 
 

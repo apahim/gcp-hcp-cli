@@ -2,8 +2,7 @@
 
 import json
 import logging
-import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
@@ -91,11 +90,13 @@ class APIClient:
 
     def _setup_default_headers(self) -> None:
         """Set up default headers for all requests."""
-        self.session.headers.update({
-            "User-Agent": self.user_agent,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": self.user_agent,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+        )
 
     def _get_auth_headers(self) -> Dict[str, str]:
         """Get authentication headers.
@@ -109,9 +110,7 @@ class APIClient:
         try:
             return self.auth.get_auth_headers()
         except Exception as e:
-            raise AuthenticationRequiredError(
-                f"Authentication failed: {e}"
-            ) from e
+            raise AuthenticationRequiredError(f"Authentication failed: {e}") from e
 
     def _build_url(self, path: str) -> str:
         """Build full URL from base URL and path.
@@ -155,10 +154,10 @@ class APIClient:
         error_message = "Unknown error"
         if isinstance(response_data, dict):
             error_message = (
-                response_data.get("message") or
-                response_data.get("error", {}).get("message") or
-                response_data.get("error") or
-                f"HTTP {response.status_code} error"
+                response_data.get("message")
+                or response_data.get("error", {}).get("message")
+                or response_data.get("error")
+                or f"HTTP {response.status_code} error"
             )
 
         # Handle specific error types
@@ -269,13 +268,9 @@ class APIClient:
                 f"Request to {url} timed out after {self.timeout} seconds"
             ) from e
         except ConnectionError as e:
-            raise APIConnectionError(
-                f"Failed to connect to {url}"
-            ) from e
+            raise APIConnectionError(f"Failed to connect to {url}") from e
         except RequestException as e:
-            raise APIConnectionError(
-                f"Request to {url} failed: {e}"
-            ) from e
+            raise APIConnectionError(f"Request to {url} failed: {e}") from e
 
     def get(
         self,
@@ -313,7 +308,9 @@ class APIClient:
         Returns:
             Parsed response data
         """
-        return self._make_request("POST", path, params=params, json_data=json_data, headers=headers)
+        return self._make_request(
+            "POST", path, params=params, json_data=json_data, headers=headers
+        )
 
     def put(
         self,
@@ -333,7 +330,9 @@ class APIClient:
         Returns:
             Parsed response data
         """
-        return self._make_request("PUT", path, params=params, json_data=json_data, headers=headers)
+        return self._make_request(
+            "PUT", path, params=params, json_data=json_data, headers=headers
+        )
 
     def delete(
         self,

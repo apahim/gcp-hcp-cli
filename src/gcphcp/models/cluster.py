@@ -11,7 +11,9 @@ class ClusterCondition(BaseModel):
 
     type: str = Field(description="Type of condition")
     status: str = Field(description="Status of condition (True/False/Unknown)")
-    lastTransitionTime: Optional[datetime] = Field(default=None, description="Last transition time")
+    lastTransitionTime: Optional[datetime] = Field(
+        default=None, description="Last transition time"
+    )
     reason: Optional[str] = Field(default=None, description="Reason for condition")
     message: Optional[str] = Field(default=None, description="Human-readable message")
 
@@ -19,11 +21,15 @@ class ClusterCondition(BaseModel):
 class ClusterStatus(BaseModel):
     """Represents cluster status information."""
 
-    phase: Optional[str] = Field(default=None, description="Current phase of the cluster")
+    phase: Optional[str] = Field(
+        default=None, description="Current phase of the cluster"
+    )
     message: Optional[str] = Field(default=None, description="Status message")
     generation: Optional[int] = Field(default=None, description="Generation number")
     resourceVersion: Optional[str] = Field(default=None, description="Resource version")
-    conditions: List[ClusterCondition] = Field(default_factory=list, description="Cluster conditions")
+    conditions: List[ClusterCondition] = Field(
+        default_factory=list, description="Cluster conditions"
+    )
     controllerStatuses: List[Dict[str, Any]] = Field(
         default_factory=list, description="Controller status information"
     )
@@ -32,11 +38,17 @@ class ClusterStatus(BaseModel):
 class ClusterSpec(BaseModel):
     """Represents cluster specification."""
 
-    targetProjectId: Optional[str] = Field(default=None, description="Target GCP project ID")
+    targetProjectId: Optional[str] = Field(
+        default=None, description="Target GCP project ID"
+    )
     region: Optional[str] = Field(default=None, description="Target region")
-    network: Optional[Dict[str, Any]] = Field(default=None, description="Network configuration")
+    network: Optional[Dict[str, Any]] = Field(
+        default=None, description="Network configuration"
+    )
     dns: Optional[Dict[str, Any]] = Field(default=None, description="DNS configuration")
-    platform: Optional[Dict[str, Any]] = Field(default=None, description="Platform configuration")
+    platform: Optional[Dict[str, Any]] = Field(
+        default=None, description="Platform configuration"
+    )
 
 
 class Cluster(BaseModel):
@@ -44,14 +56,24 @@ class Cluster(BaseModel):
 
     id: str = Field(description="Unique cluster identifier")
     name: str = Field(description="Cluster name")
-    targetProjectId: Optional[str] = Field(default=None, description="Target GCP project ID")
-    createdBy: Optional[str] = Field(default=None, description="User who created the cluster")
+    targetProjectId: Optional[str] = Field(
+        default=None, description="Target GCP project ID"
+    )
+    createdBy: Optional[str] = Field(
+        default=None, description="User who created the cluster"
+    )
     generation: Optional[int] = Field(default=None, description="Generation number")
     resourceVersion: Optional[str] = Field(default=None, description="Resource version")
-    spec: Optional[ClusterSpec] = Field(default=None, description="Cluster specification")
+    spec: Optional[ClusterSpec] = Field(
+        default=None, description="Cluster specification"
+    )
     status: Optional[ClusterStatus] = Field(default=None, description="Cluster status")
-    createdAt: Optional[datetime] = Field(default=None, description="Creation timestamp")
-    updatedAt: Optional[datetime] = Field(default=None, description="Last update timestamp")
+    createdAt: Optional[datetime] = Field(
+        default=None, description="Creation timestamp"
+    )
+    updatedAt: Optional[datetime] = Field(
+        default=None, description="Last update timestamp"
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -113,9 +135,13 @@ class Cluster(BaseModel):
         """
         # Handle datetime fields
         if "createdAt" in data and data["createdAt"]:
-            data["createdAt"] = datetime.fromisoformat(data["createdAt"].replace("Z", "+00:00"))
+            data["createdAt"] = datetime.fromisoformat(
+                data["createdAt"].replace("Z", "+00:00")
+            )
         if "updatedAt" in data and data["updatedAt"]:
-            data["updatedAt"] = datetime.fromisoformat(data["updatedAt"].replace("Z", "+00:00"))
+            data["updatedAt"] = datetime.fromisoformat(
+                data["updatedAt"].replace("Z", "+00:00")
+            )
 
         # Handle nested status
         if "status" in data and data["status"]:

@@ -18,7 +18,6 @@ from .exceptions import (
     AuthenticationError,
     TokenRefreshError,
     CredentialsNotFoundError,
-    InvalidCredentialsError,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,7 +89,7 @@ class GoogleCloudAuth:
 
             # Use ID token (JWT format) which is what the API expects
             # But without audience claims to avoid rejection
-            if hasattr(self._credentials, 'id_token') and self._credentials.id_token:
+            if hasattr(self._credentials, "id_token") and self._credentials.id_token:
                 id_token = self._credentials.id_token
             else:
                 raise AuthenticationError("Failed to obtain ID token from credentials")
@@ -98,7 +97,9 @@ class GoogleCloudAuth:
             # Extract user email from credentials
             user_email = self._extract_user_email()
             if not user_email:
-                raise AuthenticationError("Failed to extract user email from credentials")
+                raise AuthenticationError(
+                    "Failed to extract user email from credentials"
+                )
 
             return id_token, user_email
 
@@ -124,7 +125,9 @@ class GoogleCloudAuth:
                 token=cred_data.get("token"),
                 refresh_token=cred_data.get("refresh_token"),
                 id_token=cred_data.get("id_token"),
-                token_uri=cred_data.get("token_uri", "https://oauth2.googleapis.com/token"),
+                token_uri=cred_data.get(
+                    "token_uri", "https://oauth2.googleapis.com/token"
+                ),
                 client_id=cred_data.get("client_id"),
                 client_secret=cred_data.get("client_secret"),
                 scopes=cred_data.get("scopes", REQUIRED_SCOPES),
@@ -248,7 +251,9 @@ class GoogleCloudAuth:
             "id_token": getattr(self._credentials, "id_token", None),
             "client_id": getattr(self._credentials, "client_id", None),
             "client_secret": getattr(self._credentials, "client_secret", None),
-            "token_uri": getattr(self._credentials, "token_uri", "https://oauth2.googleapis.com/token"),
+            "token_uri": getattr(
+                self._credentials, "token_uri", "https://oauth2.googleapis.com/token"
+            ),
             "scopes": getattr(self._credentials, "scopes", REQUIRED_SCOPES),
             "user_email": user_email,
         }
@@ -312,12 +317,17 @@ class GoogleCloudAuth:
 
             if result.returncode != 0:
                 error_msg = result.stderr.strip() or "Failed to get identity token"
-                if "not logged in" in error_msg.lower() or "no active account" in error_msg.lower():
+                if (
+                    "not logged in" in error_msg.lower()
+                    or "no active account" in error_msg.lower()
+                ):
                     raise AuthenticationError(
                         "Not authenticated with gcloud. Please run 'gcloud auth login' first, "
                         "or use 'gcphcp auth login' for OAuth flow."
                     )
-                raise AuthenticationError(f"gcloud auth print-identity-token failed: {error_msg}")
+                raise AuthenticationError(
+                    f"gcloud auth print-identity-token failed: {error_msg}"
+                )
 
             identity_token = result.stdout.strip()
             if not identity_token:
@@ -332,7 +342,11 @@ class GoogleCloudAuth:
                 timeout=10,
             )
 
-            user_email = email_result.stdout.strip() if email_result.returncode == 0 else "unknown@example.com"
+            user_email = (
+                email_result.stdout.strip()
+                if email_result.returncode == 0
+                else "unknown@example.com"
+            )
 
             logger.debug("Successfully obtained identity token without audience")
             return identity_token, user_email
@@ -370,12 +384,17 @@ class GoogleCloudAuth:
 
             if result.returncode != 0:
                 error_msg = result.stderr.strip() or "Failed to get access token"
-                if "not logged in" in error_msg.lower() or "no active account" in error_msg.lower():
+                if (
+                    "not logged in" in error_msg.lower()
+                    or "no active account" in error_msg.lower()
+                ):
                     raise AuthenticationError(
                         "Not authenticated with gcloud. Please run 'gcloud auth login' first, "
                         "or use 'gcphcp auth login' for OAuth flow."
                     )
-                raise AuthenticationError(f"gcloud auth print-access-token failed: {error_msg}")
+                raise AuthenticationError(
+                    f"gcloud auth print-access-token failed: {error_msg}"
+                )
 
             access_token = result.stdout.strip()
             if not access_token:
@@ -390,7 +409,11 @@ class GoogleCloudAuth:
                 timeout=10,
             )
 
-            user_email = email_result.stdout.strip() if email_result.returncode == 0 else "unknown@example.com"
+            user_email = (
+                email_result.stdout.strip()
+                if email_result.returncode == 0
+                else "unknown@example.com"
+            )
 
             logger.debug("Successfully obtained access token")
             return access_token, user_email
