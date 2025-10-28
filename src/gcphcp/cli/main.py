@@ -194,7 +194,7 @@ def cli(
     verbosity: int,
     quiet: bool,
 ) -> None:
-    """GCP HCP CLI - Command-line interface for Google Cloud Platform Hosted Control Planes.
+    """GCP HCP CLI - Command-line interface for Google Cloud Platform HCP.
 
     Manage clusters and nodepools through the GCP HCP API with gcloud-style commands
     and output formatting.

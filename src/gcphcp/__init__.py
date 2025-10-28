@@ -1,4 +1,4 @@
-"""GCP HCP CLI - A command-line interface for Google Cloud Platform Hosted Control Planes.
+"""GCP HCP CLI - A command-line interface for Google Cloud Platform HCP.
 
 This package provides a comprehensive CLI for managing clusters and nodepools
 through the GCP HCP API, following gcloud CLI conventions.

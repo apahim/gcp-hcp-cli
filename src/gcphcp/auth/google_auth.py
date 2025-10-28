@@ -155,8 +155,9 @@ class GoogleCloudAuth:
                 return
             except DefaultCredentialsError:
                 raise CredentialsNotFoundError(
-                    "No OAuth client secrets found and no application default credentials available. "
-                    "Please provide client secrets file or set up application default credentials."
+                    "No OAuth client secrets found and no application default "
+                    "credentials available. Please provide client secrets file or "
+                    "set up application default credentials."
                 )
 
         try:
@@ -169,8 +170,8 @@ class GoogleCloudAuth:
             self._credentials = flow.run_local_server(
                 port=0,
                 prompt="consent",
-                authorization_prompt_message="Please visit this URL to authorize the application:",
-                success_message="Authentication successful! You can close this window.",
+                authorization_prompt_message="Please visit this URL to authorize:",
+                success_message="Authentication successful!",
             )
 
             logger.info("OAuth flow completed successfully")
@@ -322,8 +323,8 @@ class GoogleCloudAuth:
                     or "no active account" in error_msg.lower()
                 ):
                     raise AuthenticationError(
-                        "Not authenticated with gcloud. Please run 'gcloud auth login' first, "
-                        "or use 'gcphcp auth login' for OAuth flow."
+                        "Not authenticated with gcloud. Please run 'gcloud auth login' "
+                        "first, or use 'gcphcp auth login' for OAuth flow."
                     )
                 raise AuthenticationError(
                     f"gcloud auth print-identity-token failed: {error_msg}"
@@ -355,7 +356,7 @@ class GoogleCloudAuth:
             raise AuthenticationError("Timeout while calling gcloud command")
         except FileNotFoundError:
             raise AuthenticationError(
-                "gcloud command not found. Please install the Google Cloud SDK or use OAuth flow."
+                "gcloud command not found. Install Google Cloud SDK or use OAuth flow."
             )
         except Exception as e:
             raise AuthenticationError(f"Failed to get identity token: {e}", cause=e)
@@ -389,8 +390,8 @@ class GoogleCloudAuth:
                     or "no active account" in error_msg.lower()
                 ):
                     raise AuthenticationError(
-                        "Not authenticated with gcloud. Please run 'gcloud auth login' first, "
-                        "or use 'gcphcp auth login' for OAuth flow."
+                        "Not authenticated with gcloud. Please run 'gcloud auth login' "
+                        "first, or use 'gcphcp auth login' for OAuth flow."
                     )
                 raise AuthenticationError(
                     f"gcloud auth print-access-token failed: {error_msg}"
@@ -422,7 +423,7 @@ class GoogleCloudAuth:
             raise AuthenticationError("Timeout while calling gcloud command")
         except FileNotFoundError:
             raise AuthenticationError(
-                "gcloud command not found. Please install the Google Cloud SDK or use OAuth flow."
+                "gcloud command not found. Install Google Cloud SDK or use OAuth flow."
             )
         except Exception as e:
             raise AuthenticationError(f"Failed to get identity token: {e}", cause=e)

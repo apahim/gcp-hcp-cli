@@ -233,7 +233,7 @@ def cluster_status(
                     # If status endpoint is not available, show warning but continue
                     if not cli_context.quiet:
                         cli_context.console.print(
-                            f"[yellow]Warning: Could not fetch detailed controller status: {e}[/yellow]"
+                            f"[yellow]Warning: Could not fetch status: {e}[/yellow]"
                         )
 
             if cli_context.output_format == "table":
@@ -282,9 +282,8 @@ def cluster_status(
                 if cli_context.output_format == "table":
                     # Clear screen for table format
                     cli_context.console.clear()
-                    cli_context.console.print(
-                        f"[cyan]Last updated: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}[/cyan]"
-                    )
+                    timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+                    cli_context.console.print(f"[cyan]{timestamp}[/cyan]")
 
                 print_status()
 
@@ -328,7 +327,7 @@ def create_cluster(
         target_project = project or cli_context.config.get("default_project")
         if not target_project:
             cli_context.console.print(
-                "[red]Project ID is required. Use --project or set default_project in config.[/red]"
+                "[red]Project ID required. Use --project or set default_project.[/red]"
             )
             raise click.ClickException("Project ID required")
 
@@ -422,7 +421,7 @@ def delete_cluster(
         # Confirm deletion
         if not yes and not cli_context.quiet:
             cli_context.console.print(
-                f"[red]You are about to delete cluster '{cluster_name}' ({cluster_id}).[/red]"
+                f"[red]About to delete cluster '{cluster_name}' ({cluster_id}).[/red]"
             )
             if not click.confirm("This action cannot be undone. Continue?"):
                 cli_context.console.print("Deletion cancelled.")

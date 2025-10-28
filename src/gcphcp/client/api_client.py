@@ -2,14 +2,13 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import (
     ConnectionError,
-    HTTPError,
     RequestException,
     Timeout,
 )

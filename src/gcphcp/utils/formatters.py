@@ -135,7 +135,10 @@ class OutputFormatter:
                 for key, value in status.items():
                     if key == "conditions" and isinstance(value, list):
                         for i, condition in enumerate(value):
-                            condition_text = f"  {condition.get('type', 'Unknown')}: {condition.get('status', 'Unknown')}"
+                            condition_text = (
+                                f"  {condition.get('type', 'Unknown')}: "
+                                f"{condition.get('status', 'Unknown')}"
+                            )
                             if condition.get("message"):
                                 condition_text += f" ({condition['message']})"
                             table.add_row(f"  Condition {i+1}", condition_text)
@@ -399,7 +402,10 @@ class OutputFormatter:
                                     "Unknown": "yellow",
                                 }.get(condition_status, "white")
 
-                                display_text = f"[{status_color}]{condition_status}[/{status_color}]"
+                                display_text = (
+                                    f"[{status_color}]{condition_status}"
+                                    f"[/{status_color}]"
+                                )
                                 if condition_reason:
                                     display_text += f" ({condition_reason})"
 

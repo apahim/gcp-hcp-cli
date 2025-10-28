@@ -30,7 +30,7 @@ def login(cli_context, force: bool) -> None:
         if not force and cli_context.auth.is_authenticated():
             if not cli_context.quiet:
                 cli_context.console.print(
-                    "[green]✓[/green] Already authenticated. Use --force to re-authenticate."
+                    "[green]✓[/green] Already authenticated. Use --force to re-auth."
                 )
             return
 
