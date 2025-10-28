@@ -99,7 +99,9 @@ def clusters_group() -> None:
     help="Filter clusters by status",
 )
 @click.pass_obj
-def list_clusters(cli_context: "CLIContext", limit: int, offset: int, status: str) -> None:
+def list_clusters(
+    cli_context: "CLIContext", limit: int, offset: int, status: str
+) -> None:
     """List clusters in the current project.
 
     Shows a table of clusters with their basic information including
@@ -194,7 +196,11 @@ def list_clusters(cli_context: "CLIContext", limit: int, offset: int, status: st
 )
 @click.pass_obj
 def cluster_status(
-    cli_context: "CLIContext", cluster_identifier: str, watch: bool, interval: int, all: bool
+    cli_context: "CLIContext",
+    cluster_identifier: str,
+    watch: bool,
+    interval: int,
+    all: bool,
 ) -> None:
     """Show detailed information and status for a cluster.
 
@@ -320,7 +326,11 @@ def cluster_status(
 )
 @click.pass_obj
 def create_cluster(
-    cli_context: "CLIContext", cluster_name: str, project: str, description: str, dry_run: bool
+    cli_context: "CLIContext",
+    cluster_name: str,
+    project: str,
+    description: str,
+    dry_run: bool,
 ) -> None:
     """Create a new cluster.
 
