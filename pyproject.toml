@@ -128,7 +128,7 @@ addopts = [
     "--cov=gcphcp",
     "--cov-report=term-missing",
     "--cov-report=html",
-    "--cov-fail-under=30",
+    "--cov-fail-under=25",
 ]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",

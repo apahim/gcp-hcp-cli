@@ -225,8 +225,9 @@ class TestGoogleCloudAuth:
 
         # Mock _extract_user_email to return a valid email
         with patch.object(
-            auth_manager, "_extract_user_email",
-            return_value=valid_credentials_data["user_email"]
+            auth_manager,
+            "_extract_user_email",
+            return_value=valid_credentials_data["user_email"],
         ):
             # Save credentials
             auth_manager._save_credentials()
@@ -315,8 +316,9 @@ class TestGoogleCloudAuth:
         mock_default.return_value = (mock_credentials, "test-project")
 
         with patch.object(
-            auth_manager, "_get_identity_token_without_audience",
-            side_effect=AuthenticationError("No gcloud token")
+            auth_manager,
+            "_get_identity_token_without_audience",
+            side_effect=AuthenticationError("No gcloud token"),
         ):
             with patch.object(auth_manager, "_perform_oauth_flow") as mock_oauth:
                 with patch.object(
@@ -339,8 +341,9 @@ class TestGoogleCloudAuth:
             json.dump(valid_credentials_data, f)
 
         with patch.object(
-            auth_manager, "_get_identity_token_without_audience",
-            side_effect=AuthenticationError("No gcloud token")
+            auth_manager,
+            "_get_identity_token_without_audience",
+            side_effect=AuthenticationError("No gcloud token"),
         ):
             with patch.object(auth_manager, "_perform_oauth_flow") as mock_oauth:
                 with patch.object(

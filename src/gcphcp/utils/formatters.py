@@ -550,7 +550,9 @@ class OutputFormatter:
                 escaped_row = []
                 for field in row:
                     if "," in field or '"' in field:
-                        field = f'"{field.replace('"', '""')}"'
+                        # Escape double quotes by doubling them, then wrap in quotes
+                        escaped_field = field.replace('"', '""')
+                        field = f'"{escaped_field}"'
                     escaped_row.append(field)
                 self.console.print(",".join(escaped_row))
         else:
