@@ -282,7 +282,7 @@ def cluster_status(
                 if cli_context.output_format == "table":
                     # Clear screen for table format
                     cli_context.console.clear()
-                    timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
                     cli_context.console.print(f"[cyan]{timestamp}[/cyan]")
 
                 print_status()
