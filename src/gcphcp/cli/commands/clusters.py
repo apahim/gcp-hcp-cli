@@ -1,10 +1,14 @@
 """Cluster management commands for GCP HCP CLI."""
 
 import click
+from typing import Dict, Any, Union, TYPE_CHECKING
 from rich.panel import Panel
 from rich.text import Text
 
 from ...client.exceptions import APIError, ResourceNotFoundError
+
+if TYPE_CHECKING:
+    from ..main import CLIContext
 
 
 def resolve_cluster_identifier(api_client, identifier: str) -> str:
@@ -95,7 +99,7 @@ def clusters_group() -> None:
     help="Filter clusters by status",
 )
 @click.pass_obj
-def list_clusters(cli_context, limit: int, offset: int, status: str) -> None:
+def list_clusters(cli_context: "CLIContext", limit: int, offset: int, status: str) -> None:
     """List clusters in the current project.
 
     Shows a table of clusters with their basic information including
@@ -103,7 +107,7 @@ def list_clusters(cli_context, limit: int, offset: int, status: str) -> None:
     """
     try:
         # Build query parameters
-        params = {
+        params: Dict[str, Union[int, str]] = {
             "limit": limit,
             "offset": offset,
         }
@@ -190,7 +194,7 @@ def list_clusters(cli_context, limit: int, offset: int, status: str) -> None:
 )
 @click.pass_obj
 def cluster_status(
-    cli_context, cluster_identifier: str, watch: bool, interval: int, all: bool
+    cli_context: "CLIContext", cluster_identifier: str, watch: bool, interval: int, all: bool
 ) -> None:
     """Show detailed information and status for a cluster.
 
@@ -316,7 +320,7 @@ def cluster_status(
 )
 @click.pass_obj
 def create_cluster(
-    cli_context, cluster_name: str, project: str, description: str, dry_run: bool
+    cli_context: "CLIContext", cluster_name: str, project: str, description: str, dry_run: bool
 ) -> None:
     """Create a new cluster.
 
@@ -398,7 +402,7 @@ def create_cluster(
 )
 @click.pass_obj
 def delete_cluster(
-    cli_context, cluster_identifier: str, force: bool, yes: bool
+    cli_context: "CLIContext", cluster_identifier: str, force: bool, yes: bool
 ) -> None:
     """Delete a cluster.
 

@@ -43,7 +43,7 @@ class APIError(Exception):
 class APIConnectionError(APIError):
     """Exception raised when API connection fails."""
 
-    def __init__(self, message: str, cause: Exception = None) -> None:
+    def __init__(self, message: str, cause: Optional[Exception] = None) -> None:
         """Initialize the connection error.
 
         Args:
@@ -100,7 +100,7 @@ class RateLimitError(APIError):
     """Exception raised when rate limit is exceeded."""
 
     def __init__(
-        self, message: str, retry_after: Optional[int] = None, **kwargs
+        self, message: str, retry_after: Optional[int] = None, **kwargs: Any
     ) -> None:
         """Initialize the rate limit error.
 

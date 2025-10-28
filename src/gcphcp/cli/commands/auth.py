@@ -1,10 +1,14 @@
 """Authentication commands for GCP HCP CLI."""
 
 import click
+from typing import TYPE_CHECKING
 from rich.panel import Panel
 from rich.text import Text
 
 from ...auth.exceptions import AuthenticationError
+
+if TYPE_CHECKING:
+    from ..main import CLIContext
 
 
 @click.group("auth")
@@ -20,7 +24,7 @@ def auth_group() -> None:
     help="Force re-authentication even if already logged in",
 )
 @click.pass_obj
-def login(cli_context, force: bool) -> None:
+def login(cli_context: "CLIContext", force: bool) -> None:
     """Authenticate with Google Cloud Platform.
 
     This command will open a web browser to complete the OAuth 2.0 flow
@@ -74,7 +78,7 @@ def login(cli_context, force: bool) -> None:
     help="Remove all stored credentials",
 )
 @click.pass_obj
-def logout(cli_context, logout_all: bool) -> None:
+def logout(cli_context: "CLIContext", logout_all: bool) -> None:
     """Remove stored authentication credentials.
 
     This will require you to run 'gcphcp auth login' again before making API calls.
@@ -110,7 +114,7 @@ def logout(cli_context, logout_all: bool) -> None:
 
 @auth_group.command("status")
 @click.pass_obj
-def status(cli_context) -> None:
+def status(cli_context: "CLIContext") -> None:
     """Show current authentication status."""
     try:
         is_authenticated = cli_context.auth.is_authenticated()
@@ -176,7 +180,7 @@ def status(cli_context) -> None:
     help="Output format for token information",
 )
 @click.pass_obj
-def token(cli_context, token_format: str) -> None:
+def token(cli_context: "CLIContext", token_format: str) -> None:
     """Display current access token or authentication headers.
 
     This is useful for debugging or integration with other tools.

@@ -1,8 +1,12 @@
 """Configuration management commands for GCP HCP CLI."""
 
 import click
+from typing import Union, TYPE_CHECKING
 from rich.panel import Panel
 from rich.table import Table
+
+if TYPE_CHECKING:
+    from ..main import CLIContext
 
 
 @click.group("config")
@@ -13,7 +17,7 @@ def config_group() -> None:
 
 @config_group.command("list")
 @click.pass_obj
-def list_config(cli_context) -> None:
+def list_config(cli_context: "CLIContext") -> None:
     """Show current configuration values."""
     try:
         config_data = cli_context.config.get_all()
@@ -47,7 +51,7 @@ def list_config(cli_context) -> None:
 @config_group.command("get")
 @click.argument("key")
 @click.pass_obj
-def get_config(cli_context, key: str) -> None:
+def get_config(cli_context: "CLIContext", key: str) -> None:
     """Get a specific configuration value.
 
     KEY: Configuration key to retrieve.
@@ -76,7 +80,7 @@ def get_config(cli_context, key: str) -> None:
 @click.argument("key")
 @click.argument("value")
 @click.pass_obj
-def set_config(cli_context, key: str, value: str) -> None:
+def set_config(cli_context: "CLIContext", key: str, value: str) -> None:
     """Set a configuration value.
 
     KEY: Configuration key to set.
@@ -84,6 +88,7 @@ def set_config(cli_context, key: str, value: str) -> None:
     """
     try:
         # Convert string values to appropriate types
+        typed_value: Union[bool, int, str]
         if value.lower() in ("true", "false"):
             typed_value = value.lower() == "true"
         elif value.isdigit():
@@ -105,7 +110,7 @@ def set_config(cli_context, key: str, value: str) -> None:
 @config_group.command("unset")
 @click.argument("key")
 @click.pass_obj
-def unset_config(cli_context, key: str) -> None:
+def unset_config(cli_context: "CLIContext", key: str) -> None:
     """Remove a configuration value.
 
     KEY: Configuration key to remove.
@@ -141,7 +146,7 @@ def unset_config(cli_context, key: str) -> None:
     help="Default project ID",
 )
 @click.pass_obj
-def init_config(cli_context, api_endpoint: str, project: str) -> None:
+def init_config(cli_context: "CLIContext", api_endpoint: str, project: str) -> None:
     """Initialize configuration with interactive prompts."""
     try:
         # Set basic configuration
@@ -176,6 +181,6 @@ Next steps:
 
 @config_group.command("path")
 @click.pass_obj
-def config_path(cli_context) -> None:
+def config_path(cli_context: "CLIContext") -> None:
     """Show the path to the configuration file."""
     cli_context.console.print(str(cli_context.config.config_path))

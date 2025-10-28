@@ -1,10 +1,12 @@
 """Authentication exceptions for GCP HCP CLI."""
 
+from typing import Optional
+
 
 class AuthenticationError(Exception):
     """Base exception for authentication errors."""
 
-    def __init__(self, message: str, cause: Exception = None) -> None:
+    def __init__(self, message: str, cause: Optional[Exception] = None) -> None:
         """Initialize the authentication error.
 
         Args:

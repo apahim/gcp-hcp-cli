@@ -12,7 +12,7 @@ from google.auth.credentials import Credentials
 from google.auth.exceptions import RefreshError, DefaultCredentialsError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials as OAuth2Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 
 from .exceptions import (
     AuthenticationError,
@@ -210,7 +210,11 @@ class GoogleCloudAuth:
             return self._user_email
 
         # Try to get email from token info
-        if hasattr(self._credentials, "id_token") and self._credentials.id_token:
+        if (
+            self._credentials
+            and hasattr(self._credentials, "id_token")
+            and self._credentials.id_token
+        ):
             try:
                 # Decode JWT token to extract email
                 import base64
@@ -439,7 +443,7 @@ class GoogleCloudAuth:
                 return False
 
             # Check if credentials are valid and not expired
-            if self._credentials.expired:
+            if self._credentials and self._credentials.expired:
                 self._refresh_credentials()
 
             return bool(self._credentials and self._credentials.token)
