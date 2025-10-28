@@ -1,7 +1,7 @@
 """Cluster management commands for GCP HCP CLI."""
 
 import click
-from typing import Dict, Any, Union, TYPE_CHECKING
+from typing import Dict, Union, TYPE_CHECKING
 from rich.panel import Panel
 from rich.text import Text
 
