@@ -4,7 +4,7 @@ This package provides a comprehensive CLI for managing clusters and nodepools
 through the GCP HCP API, following gcloud CLI conventions.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 __author__ = "Red Hat GCP HCP Team"
 __email__ = "hcm-gcp-hcp@redhat.com"
 
