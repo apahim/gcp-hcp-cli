@@ -194,6 +194,12 @@ def list_clusters(
     is_flag=True,
     help="Show additional detailed controller status and resource information",
 )
+@click.option(
+    "-o",
+    "--output",
+    type=click.Choice(["json", "yaml"], case_sensitive=False),
+    help="Output format (json or yaml)",
+)
 @click.pass_obj
 def cluster_status(
     cli_context: "CLIContext",
@@ -201,6 +207,7 @@ def cluster_status(
     watch: bool,
     interval: int,
     all: bool,
+    output: str,
 ) -> None:
     """Show detailed information and status for a cluster.
 
@@ -217,9 +224,21 @@ def cluster_status(
       gcphcp clusters status demo08 --all
       gcphcp clusters status 3c7f2227 --watch --interval 3
       gcphcp clusters status demo08 --watch --all
+      gcphcp clusters status demo08 -o json
+      gcphcp clusters status demo08 -o yaml
     """
     import time
     from ...client.exceptions import ResourceNotFoundError, APIError
+
+    # Override output format if specified
+    if output:
+        original_format = cli_context.output_format
+        cli_context.output_format = output.lower()
+        # Update formatter to use the new format
+        from ...utils.formatters import OutputFormatter
+        cli_context.formatter = OutputFormatter(
+            format_type=output.lower(), console=cli_context.console
+        )
 
     # Resolve identifier once at the beginning
     try:
