@@ -1501,6 +1501,174 @@ def create_cluster(
         raise click.ClickException(str(e))
 
 
+@clusters_group.command("upgrade")
+@click.argument("cluster_identifier")
+@click.option(
+    "--version",
+    "target_version",
+    required=True,
+    help="Target OCP version to upgrade to (e.g. 4.22.0-ec.4)",
+)
+@click.pass_obj
+def upgrade_cluster(
+    cli_context: "CLIContext", cluster_identifier: str, target_version: str
+) -> None:
+    """Upgrade a cluster to a new OCP version.
+
+    CLUSTER_IDENTIFIER: Cluster name, partial ID (8+ chars), or full UUID.
+
+    \b
+    Examples:
+      gcphcp clusters upgrade my-cluster --version 4.22.0-ec.4
+    """
+    try:
+        api_client = cli_context.get_api_client()
+        cluster_id = resolve_cluster_identifier(api_client, cluster_identifier)
+        cluster = api_client.get(f"/api/v1/clusters/{cluster_id}")
+        cluster_name = cluster.get("name", cluster_id)
+
+        # Update the release version in the spec
+        spec = cluster.get("spec", {})
+        if "release" not in spec:
+            spec["release"] = {}
+        spec["release"]["version"] = target_version
+
+        if not cli_context.quiet:
+            cli_context.console.print(
+                f"Upgrading cluster '{cluster_name}' to version " f"{target_version}..."
+            )
+
+        api_client.put(
+            f"/api/v1/clusters/{cluster_id}",
+            json_data={"spec": spec},
+        )
+
+        if not cli_context.quiet:
+            cli_context.console.print(
+                f"[green]✓[/green] Upgrade initiated. Use "
+                f"'gcphcp clusters describe upgrade {cluster_identifier}' "
+                f"to monitor progress."
+            )
+
+    except click.ClickException:
+        raise
+    except APIError as e:
+        cli_context.console.print(f"[red]Failed to upgrade cluster: {e}[/red]")
+        raise click.ClickException(str(e))
+    except Exception as e:
+        cli_context.console.print(f"[red]Unexpected error: {e}[/red]")
+        raise click.ClickException(str(e))
+
+
+@clusters_group.group("describe")
+def clusters_describe_group() -> None:
+    """Describe cluster resources."""
+    pass
+
+
+@clusters_describe_group.command("upgrade")
+@click.argument("cluster_identifier")
+@click.pass_obj
+def describe_cluster_upgrade(
+    cli_context: "CLIContext", cluster_identifier: str
+) -> None:
+    """Show cluster upgrade status.
+
+    CLUSTER_IDENTIFIER: Cluster name, partial ID (8+ chars), or full UUID.
+
+    \b
+    Examples:
+      gcphcp clusters describe upgrade my-cluster
+    """
+    try:
+        api_client = cli_context.get_api_client()
+        cluster_id = resolve_cluster_identifier(api_client, cluster_identifier)
+        cluster = api_client.get(f"/api/v1/clusters/{cluster_id}")
+        cluster_name = cluster.get("name", cluster_id)
+
+        # Get detailed status with controller statuses
+        status_response = api_client.get(f"/api/v1/clusters/{cluster_id}/status")
+
+        # Find HostedCluster resource status from controller statuses
+        hc_resource_status = None
+        controller_statuses = status_response.get("controller_status") or []
+        for cs in controller_statuses:
+            metadata = cs.get("metadata") or {}
+            resources = metadata.get("resources") or {}
+            if "hostedcluster" in resources:
+                hc = resources["hostedcluster"]
+                hc_resource_status = hc.get("resource_status") or {}
+                break
+
+        if not hc_resource_status:
+            cli_context.console.print(
+                "[yellow]No HostedCluster status available yet.[/yellow]"
+            )
+            return
+
+        # Extract version info
+        version_info = hc_resource_status.get("version") or {}
+        history = version_info.get("history") or []
+        available_updates = version_info.get("availableUpdates")
+        latest = history[0] if history else {}
+
+        # Extract conditions matching oc get hc output
+        conditions = hc_resource_status.get("conditions") or []
+        condition_map = {c["type"]: c for c in conditions}
+        cv_progressing = condition_map.get("ClusterVersionProgressing", {})
+
+        current_version = latest.get("version") or "N/A"
+        progress = latest.get("state") or "Unknown"
+        updating_status = cv_progressing.get("status", "Unknown")
+        updating_msg = cv_progressing.get("message", "")
+
+        # Show "old → new" during upgrades
+        if progress == "Partial" and len(history) > 1:
+            previous_version = history[1].get("version", "")
+            version = f"{previous_version} → {current_version}"
+        else:
+            version = current_version
+
+        upgrade_data = {
+            "cluster": cluster_name,
+            "version": version,
+            "progress": progress,
+            "updating_version": updating_status,
+            "message": updating_msg,
+            "available_updates": available_updates,
+        }
+
+        if cli_context.output_format != "table":
+            cli_context.formatter.print_data(upgrade_data)
+            return
+
+        # Table-style key-value display
+        cli_context.console.print(f"Cluster:            {upgrade_data['cluster']}")
+        cli_context.console.print(f"Version:            {upgrade_data['version']}")
+        cli_context.console.print(f"Progress:           {upgrade_data['progress']}")
+        cli_context.console.print(
+            f"Updating Version:   {upgrade_data['updating_version']}"
+        )
+        if upgrade_data["message"]:
+            cli_context.console.print(f"Message:            {upgrade_data['message']}")
+
+        if available_updates:
+            cli_context.console.print("\nAvailable Updates:")
+            for update in available_updates:
+                cli_context.console.print(f"  - {update.get('version', 'unknown')}")
+        else:
+            cli_context.console.print("\n[dim]No available updates.[/dim]")
+
+    except click.ClickException:
+        raise
+    except APIError as e:
+        cli_context.console.print(f"[red]Failed to get upgrade status: {e}[/red]")
+        raise click.ClickException(str(e))
+    except Exception as e:
+        cli_context.console.print(f"[red]Unexpected error: {e}[/red]")
+        raise click.ClickException(str(e))
+
+
 @clusters_group.command("delete")
 @click.argument("cluster_identifier")
 @click.option(
