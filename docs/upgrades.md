@@ -43,13 +43,31 @@ No available updates.
 
 ## Upgrading a NodePool
 
-Upgrade a nodepool to a new OCP version:
+Upgrade a nodepool to match the control plane version:
 
 ```bash
-gcphcp nodepools upgrade my-nodepool --cluster my-cluster --version 4.22.0-ec.5
+gcphcp nodepools upgrade my-nodepool --cluster my-cluster
 ```
 
-Cluster and nodepool upgrades are independent operations. You can upgrade them separately and to different versions (within the supported version skew).
+The target version is automatically resolved from the cluster's control plane — there is no `--version` flag. The command validates the CP state before proceeding:
+
+- If the nodepool is already at the CP version:
+  ```
+  Nodepool 'my-nodepool' is already at version 4.22.0-ec.5. Nothing to do.
+  ```
+- If the CP upgrade hasn't started yet:
+  ```
+  Error: Control plane upgrade to 4.22.0-ec.5 has not started yet. Wait for the CP upgrade to begin before upgrading nodepools.
+  ```
+- If the CP upgrade is still in progress:
+  ```
+  Error: Control plane upgrade to 4.22.0-ec.5 is still in progress (state: Partial). Wait for the CP upgrade to complete before upgrading nodepools.
+  ```
+- If the CP upgrade has completed, the nodepool upgrade proceeds:
+  ```
+  Upgrading nodepool 'my-nodepool' from 4.22.0-ec.4 to 4.22.0-ec.5 (matching control plane version)...
+  ✓ Upgrade initiated. Use 'gcphcp nodepools describe upgrade my-nodepool --cluster my-cluster' to monitor progress.
+  ```
 
 ### Checking NodePool Upgrade Status
 

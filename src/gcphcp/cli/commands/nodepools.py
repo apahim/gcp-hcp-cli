@@ -667,6 +667,88 @@ def scale_nodepool(
         raise click.ClickException(str(e))
 
 
+def _get_cp_target_version(api_client, cluster_id: str) -> str:
+    """Get the control plane target version from the cluster spec.
+
+    Args:
+        api_client: API client instance
+        cluster_id: Full cluster UUID
+
+    Returns:
+        Target version string (e.g. "4.22.0-ec.4")
+
+    Raises:
+        click.ClickException: If version cannot be determined
+    """
+    cluster = api_client.get(f"/api/v1/clusters/{cluster_id}")
+    spec = cluster.get("spec", {})
+    release = spec.get("release", {})
+    version = release.get("version")
+    if not version:
+        raise click.ClickException(
+            "Cannot determine control plane target version from cluster spec."
+        )
+    return version
+
+
+def _check_cp_upgrade_completed(api_client, cluster_id: str, target_version: str):
+    """Verify the CP upgrade to target_version has completed.
+
+    Checks the HostedCluster version history for an entry matching
+    target_version with state == Completed.
+
+    Args:
+        api_client: API client instance
+        cluster_id: Full cluster UUID
+        target_version: Expected CP version
+
+    Raises:
+        click.ClickException: If CP upgrade is not completed
+    """
+    status_response = api_client.get(f"/api/v1/clusters/{cluster_id}/status")
+
+    # Find HC resource status from controller metadata
+    hc_resource_status = None
+    controller_statuses = status_response.get("controller_status") or []
+    for cs in controller_statuses:
+        metadata = cs.get("metadata") or {}
+        resources = metadata.get("resources") or {}
+        if "hostedcluster" in resources:
+            hc = resources["hostedcluster"]
+            hc_resource_status = hc.get("resource_status") or {}
+            break
+
+    if not hc_resource_status:
+        raise click.ClickException(
+            "No HostedCluster status available yet. "
+            "Cannot verify control plane upgrade status."
+        )
+
+    # Find the history entry matching the target version
+    version_info = hc_resource_status.get("version") or {}
+    history = version_info.get("history") or []
+
+    matching_entry = None
+    for entry in history:
+        if entry.get("version") == target_version:
+            matching_entry = entry
+            break
+
+    if not matching_entry:
+        raise click.ClickException(
+            f"Control plane upgrade to {target_version} has not started yet. "
+            "Wait for the CP upgrade to begin before upgrading nodepools."
+        )
+
+    state = matching_entry.get("state", "Unknown")
+    if state != "Completed":
+        raise click.ClickException(
+            f"Control plane upgrade to {target_version} is still in progress "
+            f"(state: {state}). "
+            "Wait for the CP upgrade to complete before upgrading nodepools."
+        )
+
+
 @nodepools_group.command("upgrade")
 @click.argument("nodepool_identifier")
 @click.option(
@@ -674,26 +756,23 @@ def scale_nodepool(
     required=True,
     help="Cluster name, partial ID (8+ chars), or full UUID",
 )
-@click.option(
-    "--version",
-    "target_version",
-    required=True,
-    help="Target OCP version to upgrade to (e.g. 4.22.0-ec.4)",
-)
 @click.pass_obj
 def upgrade_nodepool(
     cli_context: "CLIContext",
     nodepool_identifier: str,
     cluster: str,
-    target_version: str,
 ) -> None:
-    """Upgrade a nodepool to a new OCP version.
+    """Upgrade a nodepool to match the control plane version.
+
+    The target version is automatically resolved from the cluster's
+    control plane. The upgrade will only proceed if the CP upgrade
+    has completed.
 
     NODEPOOL_IDENTIFIER: NodePool name, partial ID (8+ chars), or full UUID.
 
     \b
     Examples:
-      gcphcp nodepools upgrade my-nodepool --cluster my-cluster --version 4.22.0-ec.4
+      gcphcp nodepools upgrade my-nodepool --cluster my-cluster
     """
     try:
         api_client = cli_context.get_api_client()
@@ -707,17 +786,33 @@ def upgrade_nodepool(
         nodepool = api_client.get(f"/api/v1/nodepools/{nodepool_id}")
         nodepool_name = nodepool.get("name", nodepool_id)
 
+        # Resolve target version from CP
+        target_version = _get_cp_target_version(api_client, cluster_id)
+
+        # Check if nodepool is already at the target version
+        np_version = nodepool.get("spec", {}).get("release", {}).get("version")
+        if np_version == target_version:
+            if not cli_context.quiet:
+                cli_context.console.print(
+                    f"Nodepool '{nodepool_name}' is already at version "
+                    f"{target_version}. Nothing to do."
+                )
+            return
+
+        # Verify CP upgrade has completed
+        _check_cp_upgrade_completed(api_client, cluster_id, target_version)
+
+        if not cli_context.quiet:
+            cli_context.console.print(
+                f"Upgrading nodepool '{nodepool_name}' from {np_version} to "
+                f"{target_version} (matching control plane version)..."
+            )
+
         # Update the release version in the spec
         spec = nodepool.get("spec", {})
         if "release" not in spec:
             spec["release"] = {}
         spec["release"]["version"] = target_version
-
-        if not cli_context.quiet:
-            cli_context.console.print(
-                f"Upgrading nodepool '{nodepool_name}' to version "
-                f"{target_version}..."
-            )
 
         api_client.put(
             f"/api/v1/nodepools/{nodepool_id}",

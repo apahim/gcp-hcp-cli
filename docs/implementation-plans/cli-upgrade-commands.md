@@ -2,7 +2,10 @@
 
 ## Overview
 
-Add `upgrade` and `describe upgrade` commands to `gcphcp clusters` and `gcphcp nodepools`. These commands use existing CLS Backend endpoints (no backend changes) to trigger version upgrades and display upgrade status.
+Add `upgrade` and `describe upgrade` commands to `gcphcp clusters` and `gcphcp nodepools`.
+
+- **Cluster upgrades**: User specifies a target version. CLI updates `spec.release.version` via PUT on the existing cluster endpoint.
+- **NodePool upgrades**: Version is **not user-selectable**. NodePools always upgrade to match the control plane version. The CLI resolves the target version from `cluster.spec.release.version` and validates that the CP upgrade has completed (HC version history entry matches target with `state == Completed`) before triggering the upgrade via the existing PUT endpoint. In the future, this might migrate (TBD) to a dedicated `POST /api/v1/nodepools/{id}/upgrade` endpoint (CLM only, not CLS).
 
 **Design Decision**: [adopt-cincinnati-for-version-resolution](https://github.com/openshift-online/gcp-hcp/blob/main/design-decisions/adopt-cincinnati-for-version-resolution.md)
 
@@ -44,8 +47,8 @@ gcphcp clusters describe upgrade my-cluster
 ### NodePool Commands
 
 ```bash
-# Upgrade nodepool to a specific version
-gcphcp nodepools upgrade my-nodepool --cluster my-cluster --version 4.22.0-ec.5
+# Upgrade nodepool to match control plane version (no --version flag)
+gcphcp nodepools upgrade my-nodepool --cluster my-cluster
 
 # Check upgrade status
 gcphcp nodepools describe upgrade my-nodepool --cluster my-cluster
@@ -137,12 +140,31 @@ Available Updates:
 
 **File**: `src/gcphcp/cli/commands/nodepools.py`
 
-1. Accept `NODEPOOL` argument, `--cluster` (required) and `--version` (required) flags
+**Design decisions**:
+- NodePool version is **not user-selectable** — always upgrades to match the control plane version
+- CLI resolves target version from `cluster.spec.release.version`
+- Currently uses existing `PUT /api/v1/nodepools/{id}` to set the version
+- Future: might migrate (TBD) to dedicated `POST /api/v1/nodepools/{id}/upgrade` (CLM only, not CLS)
+
+**Flow**:
+1. Accept `NODEPOOL` argument and `--cluster` (required) flag — no `--version` flag
 2. Resolve cluster and nodepool identifiers using existing resolvers
-3. GET `/api/v1/nodepools/{id}` to fetch current nodepool
-4. Set `spec.release.version` to the target version
-5. PUT `/api/v1/nodepools/{id}` with the updated spec
-6. Display confirmation
+3. Fetch target version from `cluster.spec.release.version`
+4. Check if nodepool is already at target version → inform and skip
+5. Validate CP upgrade has completed:
+   - Fetch HC resource status via `GET /api/v1/clusters/{id}/status`
+   - Find version history entry matching target version
+   - Not found → block (CP upgrade hasn't started)
+   - `state == Partial` → block (CP upgrade in progress)
+   - `state == Completed` → proceed
+6. Display: `Upgrading nodepool 'my-np' from 4.22.0-ec.4 → 4.22.0-ec.5 (matching control plane version)...`
+7. `PUT /api/v1/nodepools/{id}` with `spec.release.version` set to target version
+
+```
+$ gcphcp nodepools upgrade my-nodepool --cluster my-cluster
+Upgrading nodepool 'my-nodepool' from 4.22.0-ec.4 to 4.22.0-ec.5 (matching control plane version)...
+✓ Upgrade initiated. Use 'gcphcp nodepools describe upgrade my-nodepool --cluster my-cluster' to monitor progress.
+```
 
 ### `nodepools describe upgrade`
 
