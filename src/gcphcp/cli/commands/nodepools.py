@@ -667,6 +667,284 @@ def scale_nodepool(
         raise click.ClickException(str(e))
 
 
+def _get_cp_target_version(api_client, cluster_id: str) -> str:
+    """Get the control plane target version from the cluster spec.
+
+    Args:
+        api_client: API client instance
+        cluster_id: Full cluster UUID
+
+    Returns:
+        Target version string (e.g. "4.22.0-ec.4")
+
+    Raises:
+        click.ClickException: If version cannot be determined
+    """
+    cluster = api_client.get(f"/api/v1/clusters/{cluster_id}")
+    spec = cluster.get("spec", {})
+    release = spec.get("release", {})
+    version = release.get("version")
+    if not version:
+        raise click.ClickException(
+            "Cannot determine control plane target version from cluster spec."
+        )
+    return version
+
+
+def _check_cp_upgrade_completed(api_client, cluster_id: str, target_version: str):
+    """Verify the CP upgrade to target_version has completed.
+
+    Checks the HostedCluster version history for an entry matching
+    target_version with state == Completed.
+
+    Args:
+        api_client: API client instance
+        cluster_id: Full cluster UUID
+        target_version: Expected CP version
+
+    Raises:
+        click.ClickException: If CP upgrade is not completed
+    """
+    status_response = api_client.get(f"/api/v1/clusters/{cluster_id}/status")
+
+    # Find HC resource status from controller metadata
+    hc_resource_status = None
+    controller_statuses = status_response.get("controller_status") or []
+    for cs in controller_statuses:
+        metadata = cs.get("metadata") or {}
+        resources = metadata.get("resources") or {}
+        if "hostedcluster" in resources:
+            hc = resources["hostedcluster"]
+            hc_resource_status = hc.get("resource_status") or {}
+            break
+
+    if not hc_resource_status:
+        raise click.ClickException(
+            "No HostedCluster status available yet. "
+            "Cannot verify control plane upgrade status."
+        )
+
+    # Find the history entry matching the target version
+    version_info = hc_resource_status.get("version") or {}
+    history = version_info.get("history") or []
+
+    matching_entry = None
+    for entry in history:
+        if entry.get("version") == target_version:
+            matching_entry = entry
+            break
+
+    if not matching_entry:
+        raise click.ClickException(
+            f"Control plane upgrade to {target_version} has not started yet. "
+            "Wait for the CP upgrade to begin before upgrading nodepools."
+        )
+
+    state = matching_entry.get("state", "Unknown")
+    if state != "Completed":
+        raise click.ClickException(
+            f"Control plane upgrade to {target_version} is still in progress "
+            f"(state: {state}). "
+            "Wait for the CP upgrade to complete before upgrading nodepools."
+        )
+
+
+@nodepools_group.command("upgrade")
+@click.argument("nodepool_identifier")
+@click.option(
+    "--cluster",
+    required=True,
+    help="Cluster name, partial ID (8+ chars), or full UUID",
+)
+@click.pass_obj
+def upgrade_nodepool(
+    cli_context: "CLIContext",
+    nodepool_identifier: str,
+    cluster: str,
+) -> None:
+    """Upgrade a nodepool to match the control plane version.
+
+    The target version is automatically resolved from the cluster's
+    control plane. The upgrade will only proceed if the CP upgrade
+    has completed.
+
+    NODEPOOL_IDENTIFIER: NodePool name, partial ID (8+ chars), or full UUID.
+
+    \b
+    Examples:
+      gcphcp nodepools upgrade my-nodepool --cluster my-cluster
+    """
+    try:
+        api_client = cli_context.get_api_client()
+
+        from .clusters import resolve_cluster_identifier
+
+        cluster_id = resolve_cluster_identifier(api_client, cluster)
+        nodepool_id = resolve_nodepool_identifier(
+            api_client, nodepool_identifier, cluster_id=cluster_id
+        )
+        nodepool = api_client.get(f"/api/v1/nodepools/{nodepool_id}")
+        nodepool_name = nodepool.get("name", nodepool_id)
+
+        # Resolve target version from CP
+        target_version = _get_cp_target_version(api_client, cluster_id)
+
+        # Check if nodepool is already at the target version
+        np_version = nodepool.get("spec", {}).get("release", {}).get("version")
+        if np_version == target_version:
+            if not cli_context.quiet:
+                cli_context.console.print(
+                    f"Nodepool '{nodepool_name}' is already at version "
+                    f"{target_version}. Nothing to do."
+                )
+            return
+
+        # Verify CP upgrade has completed
+        _check_cp_upgrade_completed(api_client, cluster_id, target_version)
+
+        if not cli_context.quiet:
+            cli_context.console.print(
+                f"Upgrading nodepool '{nodepool_name}' from {np_version} to "
+                f"{target_version} (matching control plane version)..."
+            )
+
+        # Update the release version in the spec
+        spec = nodepool.get("spec", {})
+        if "release" not in spec:
+            spec["release"] = {}
+        spec["release"]["version"] = target_version
+
+        api_client.put(
+            f"/api/v1/nodepools/{nodepool_id}",
+            json_data={"spec": spec},
+        )
+
+        if not cli_context.quiet:
+            cli_context.console.print(
+                f"[green]✓[/green] Upgrade initiated. Use "
+                f"'gcphcp nodepools describe upgrade {nodepool_identifier} "
+                f"--cluster {cluster}' to monitor progress."
+            )
+
+    except click.ClickException:
+        raise
+    except APIError as e:
+        cli_context.console.print(f"[red]Failed to upgrade nodepool: {e}[/red]")
+        raise click.ClickException(str(e))
+    except Exception as e:
+        cli_context.console.print(f"[red]Unexpected error: {e}[/red]")
+        raise click.ClickException(str(e))
+
+
+@nodepools_group.group("describe")
+def nodepools_describe_group() -> None:
+    """Describe nodepool resources."""
+    pass
+
+
+@nodepools_describe_group.command("upgrade")
+@click.argument("nodepool_identifier")
+@click.option(
+    "--cluster",
+    required=True,
+    help="Cluster name, partial ID (8+ chars), or full UUID",
+)
+@click.pass_obj
+def describe_nodepool_upgrade(
+    cli_context: "CLIContext", nodepool_identifier: str, cluster: str
+) -> None:
+    """Show nodepool upgrade status.
+
+    NODEPOOL_IDENTIFIER: NodePool name, partial ID (8+ chars), or full UUID.
+
+    \b
+    Examples:
+      gcphcp nodepools describe upgrade my-nodepool --cluster my-cluster
+    """
+    try:
+        api_client = cli_context.get_api_client()
+
+        from .clusters import resolve_cluster_identifier
+
+        cluster_id = resolve_cluster_identifier(api_client, cluster)
+        nodepool_id = resolve_nodepool_identifier(
+            api_client, nodepool_identifier, cluster_id=cluster_id
+        )
+        nodepool = api_client.get(f"/api/v1/nodepools/{nodepool_id}")
+        nodepool_name = nodepool.get("name", nodepool_id)
+
+        # Get detailed status with controller statuses
+        status_response = api_client.get(f"/api/v1/nodepools/{nodepool_id}/status")
+
+        # Find nodepool resource status from controller statuses
+        np_resource_status = None
+        controller_statuses = status_response.get("controller_status") or []
+        for cs in controller_statuses:
+            metadata = cs.get("metadata") or {}
+            resources = metadata.get("resources") or {}
+            if "nodepool" in resources:
+                np = resources["nodepool"]
+                np_resource_status = np.get("resource_status") or {}
+                break
+
+        if not np_resource_status:
+            cli_context.console.print(
+                "[yellow]No NodePool status available yet.[/yellow]"
+            )
+            return
+
+        # Extract conditions
+        conditions = np_resource_status.get("conditions") or []
+        condition_map = {c["type"]: c for c in conditions}
+
+        updating_version = condition_map.get("UpdatingVersion", {})
+        ready = condition_map.get("Ready", {})
+
+        # Version display with arrow during upgrades
+        current_version = np_resource_status.get("version", "N/A")
+        updating_ver_status = updating_version.get("status", "Unknown")
+        updating_msg = updating_version.get("message", "")
+
+        if updating_ver_status == "True" and "Target version:" in updating_msg:
+            target = updating_msg.split("Target version:")[-1].strip()
+            version = f"{current_version} → {target}"
+        else:
+            version = current_version
+
+        upgrade_data = {
+            "nodepool": nodepool_name,
+            "cluster": cluster,
+            "version": version,
+            "updating_version": updating_ver_status,
+            "ready": ready.get("status", "Unknown"),
+            "message": ready.get("message", ""),
+        }
+
+        if cli_context.output_format != "table":
+            cli_context.formatter.print_data(upgrade_data)
+            return
+
+        # Table-style key-value display
+        cli_context.console.print(f"NodePool:           {upgrade_data['nodepool']}")
+        cli_context.console.print(f"Cluster:            {upgrade_data['cluster']}")
+        cli_context.console.print(f"Version:            {upgrade_data['version']}")
+        cli_context.console.print(
+            f"Updating Version:   {upgrade_data['updating_version']}"
+        )
+        cli_context.console.print(f"Ready:              {upgrade_data['ready']}")
+        if upgrade_data["message"]:
+            cli_context.console.print(f"Message:            {upgrade_data['message']}")
+
+    except click.ClickException:
+        raise
+    except APIError as e:
+        cli_context.console.print(f"[red]Failed to get upgrade status: {e}[/red]")
+        raise click.ClickException(str(e))
+    except Exception as e:
+        cli_context.console.print(f"[red]Unexpected error: {e}[/red]")
+        raise click.ClickException(str(e))
+
+
 @nodepools_group.command("delete")
 @click.argument("nodepool_identifier")
 @click.option(
